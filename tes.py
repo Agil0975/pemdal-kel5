@@ -1,19 +1,29 @@
-from pymemcache.client import base
+import aerospike
 import requests
 
-# Tes Memcached
-client = base.Client(('127.0.0.1', 11211))
-client.set("foo", "bar")
-client.set("number", 42)
-client.set("employee:1:name", "Alice")
-client.set("employee:1:age", 30)
-client.set("employee:2:name", "Bob")
-client.set("employee:2:age", 25)
-print("Memcached get:", client.get("foo"))
-print("Memcached get number:", client.get("number"))
-print("Memcached get employee 1 name:", client.get("employee:1:name"))
-print("Memcached get employee 2 age:", client.get("employee:2:age"))
+# === Tes Aerospike ===
+config = {
+    'hosts': [('127.0.0.1', 3000)]
+}
+client = aerospike.client(config).connect()
 
+# namespace = "test" (default di config aerospike.conf)
+namespace = "test"
+set_name = "employees"
+
+# Simpan data
+client.put((namespace, set_name, "foo"), {"value": "bar"})
+client.put((namespace, set_name, "number"), {"value": 42})
+client.put((namespace, set_name, "employee:1"), {"name": "Alice", "age": 30})
+client.put((namespace, set_name, "employee:2"), {"name": "Bob", "age": 25})
+
+# Ambil data
+print("Aerospike get foo:", client.get((namespace, set_name, "foo"))[2])
+print("Aerospike get number:", client.get((namespace, set_name, "number"))[2])
+print("Aerospike get employee 1:", client.get((namespace, set_name, "employee:1"))[2])
+print("Aerospike get employee 2:", client.get((namespace, set_name, "employee:2"))[2])
+
+client.close()
 
 # Tes CouchDB
 COUCHDB_URL = "http://127.0.0.1:5984"

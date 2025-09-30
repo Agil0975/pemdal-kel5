@@ -13,13 +13,20 @@ services:
     volumes:
       - couchdb_data:/opt/couchdb/data
 
-  memcached:
-    image: memcached:1.6
-    container_name: memcached
+  aerospike:
+    image: aerospike/aerospike-server:7.1.0.4
+    container_name: aerospike
     restart: always
     ports:
-      - "11211:11211"
-    command: memcached -m 128
+      - "3000:3000"   # service
+      - "3001:3001"   # management
+      - "3002:3002"   # fabric (cluster)
+      - "3003:3003"   # info
+    volumes:
+      - aerospike_data:/opt/aerospike/data
+    command: >
+      --config-file /etc/aerospike/aerospike.conf
 
 volumes:
   couchdb_data:
+  aerospike_data:
