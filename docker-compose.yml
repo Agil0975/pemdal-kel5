@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  couchdb:
+    image: couchdb:3.3
+    container_name: couchdb
+    restart: always
+    ports:
+      - "5984:5984"
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=admin123
+    volumes:
+      - couchdb_data:/opt/couchdb/data
+
+  memcached:
+    image: memcached:1.6
+    container_name: memcached
+    restart: always
+    ports:
+      - "11211:11211"
+    command: memcached -m 128
+
+volumes:
+  couchdb_data:
