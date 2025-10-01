@@ -14,7 +14,7 @@ services:
       - couchdb_data:/opt/couchdb/data
 
   aerospike:
-    image: aerospike/aerospike-server:7.1.0.4
+    image: aerospike/aerospike-server
     container_name: aerospike
     restart: always
     ports:
@@ -23,9 +23,8 @@ services:
       - "3002:3002"   # fabric (cluster)
       - "3003:3003"   # info
     volumes:
-      - aerospike_data:/opt/aerospike/data
-    command: >
-      --config-file /etc/aerospike/aerospike.conf
+      - ./aerospike:/opt/aerospike/etc
+    command: [asd, --config-file, /opt/aerospike/etc/aerospike.conf]
 
 volumes:
   couchdb_data:
