@@ -104,6 +104,106 @@ def insert_docs(db_name, docs):
         print(f"❌ Invalid input type. Expected dict or list, got {type(docs)}")
         return None
 
+def update_doc(db_name, doc_id, updates):
+    """
+    Update a document in CouchDB by its _id.
+    
+    Args:
+        db_name (str): Nama database.
+        doc_id (str): _id dokumen yang akan diperbarui.
+        updates (dict): Field baru atau perubahan yang ingin diterapkan.
+    
+    Returns:
+        dict or None: Response hasil update dari CouchDB.
+    
+    Contoh:
+        update_doc("users", "user123", {"nama_lengkap": "Agil F. Sabri"})
+    """
+    # Ambil dokumen lama
+    url_get = f"{COUCHDB_URL}/{db_name}/{doc_id}"
+    res_get = requests.get(url_get, auth=AUTH)
+
+    if res_get.status_code != 200:
+        print(f"❌ Dokumen {doc_id} tidak ditemukan di {db_name}")
+        return None
+
+    doc = res_get.json()
+
+    # Update field sesuai input
+    doc.update(updates)
+
+    # Simpan kembali (perlu _rev yang terbaru)
+    url_put = f"{COUCHDB_URL}/{db_name}/{doc_id}"
+    res_put = requests.put(url_put, json=doc, auth=AUTH)
+
+    if res_put.status_code in [200, 201]:
+        print(f"✅ Dokumen {doc_id} diupdate di {db_name}")
+        return res_put.json()
+    else:
+        print(f"❌ Gagal update {doc_id}: {res_put.text}")
+        return None
+
+def update_docs_where(db_name, selector, updates):
+    """
+    Update multiple documents matching a Mango selector.
+    """
+    docs = query_docs(db_name, {"selector": selector})
+    if not docs:
+        print(f"ℹ️ Tidak ada dokumen yang cocok di {db_name}")
+        return 0
+
+    updated_docs = []
+    for doc in docs:
+        doc.update(updates)
+        updated_docs.append(doc)
+
+    url = f"{COUCHDB_URL}/{db_name}/_bulk_docs"
+    res = requests.post(url, json={"docs": updated_docs}, auth=AUTH)
+
+    if res.status_code in [201, 202]:
+        success = sum(1 for r in res.json() if r.get("ok"))
+        print(f"✅ Berhasil update {success} dokumen di {db_name}")
+        return success
+    else:
+        print(f"❌ Gagal update dokumen: {res.text}")
+        return 0
+
+def delete_doc(db_name, doc_id):
+    """
+    Menghapus satu dokumen dari CouchDB berdasarkan _id.
+
+    Args:
+        db_name (str): Nama database
+        doc_id (str): _id dokumen yang ingin dihapus
+
+    Returns:
+        bool: True jika sukses, False jika gagal
+
+    Contoh:
+        delete_doc_by_id("users", "user123")
+    """
+    # Ambil dokumen dulu untuk mendapatkan _rev
+    url_get = f"{COUCHDB_URL}/{db_name}/{doc_id}"
+    res_get = requests.get(url_get, auth=AUTH)
+
+    if res_get.status_code != 200:
+        print(f"❌ Dokumen {doc_id} tidak ditemukan di {db_name}")
+        return False
+
+    doc = res_get.json()
+    rev = doc["_rev"]
+
+    # Lakukan DELETE dengan menyertakan revision
+    url_delete = f"{COUCHDB_URL}/{db_name}/{doc_id}?rev={rev}"
+    res_del = requests.delete(url_delete, auth=AUTH)
+
+    if res_del.status_code in [200, 202]:
+        print(f"🗑️ Dokumen {doc_id} berhasil dihapus dari {db_name}")
+        return True
+    else:
+        print(f"❌ Gagal menghapus {doc_id}: {res_del.text}")
+        return False
+
 
 def delete_docs_where(db_name, selector, limit=None):
     """
