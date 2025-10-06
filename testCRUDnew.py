@@ -1,4 +1,4 @@
-from CRUDnew import *
+from CRUDCouchDB import *
 
 # --- SETUP: Create databases and seed data ---
 print("\n" + "=" * 70)
