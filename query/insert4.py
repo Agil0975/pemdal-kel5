@@ -243,14 +243,14 @@ def bulk_add_departments():
                                              min(2, len(available_departments)))
             
             for dept in departments_to_add:
-                print(f"\n🔄 Menambah {dept} ke {hospital['nama']}...")
+                print(f"\nAdding {dept} to {hospital['nama']}...")
                 if add_department_to_hospital(hospital['id_rs'], dept):
                     success_count += 1
                 time.sleep(0.5)  # Delay untuk avoid conflicts
         else:
-            print(f"⚠️  {hospital['nama']} sudah lengkap departemennya")
+            print(f"Warning: {hospital['nama']} already has all departments")
     
-    print(f"\n✅ Bulk add selesai! {success_count} departemen berhasil ditambahkan.")
+    print(f"\nBulk add completed! {success_count} departments successfully added.")
 
 if __name__ == "__main__":
     print("Starting INSERT 4 - Department Management")

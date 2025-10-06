@@ -157,7 +157,7 @@ def create_hospital_network(count=3):
     hospitals = []
     
     for i in range(count):
-        print(f"\n🏥 Membuat rumah sakit {i+1}/{count}...")
+        print(f"\nCreating hospital {i+1}/{count}...")
         hospital = create_new_hospital()
         if hospital:
             hospitals.append(hospital)
@@ -165,10 +165,10 @@ def create_hospital_network(count=3):
     
     total_time = (time.time() - start_time) * 1000
     
-    print(f"\n✅ Jaringan rumah sakit selesai dibuat!")
-    print(f"🏥 Total: {len(hospitals)} rumah sakit")
-    print(f"⏱️  Total waktu: {total_time:.2f} ms")
-    print(f"📈 Rata-rata: {total_time/len(hospitals):.2f} ms/rumah sakit")
+    print(f"\nHospital network creation completed")
+    print(f"Total hospitals: {len(hospitals)}")
+    print(f"Total time: {total_time:.2f} ms")
+    print(f"Average time per hospital: {total_time/len(hospitals):.2f} ms")
     
     return hospitals
 
