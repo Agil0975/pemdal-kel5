@@ -172,35 +172,61 @@ def run_seeder():
     print("Baymin dimasukkan ke Aerospike.")
 
     # 6. Log Aktivitas Baymin (key-value)
-    for i in range(5000):
-        perangkat = random.choice(baymin_list)
-        waktu = datetime.datetime.now() - datetime.timedelta(minutes=random.randint(1, 1000))
-        tanggal = waktu.date().isoformat()  # YYYY-MM-DD → untuk key
-        jam = waktu.strftime("%H:%M:%S")    # HH:MM:SS → untuk key di dictionary
+    # today = datetime.date.today()
+    # start_date = today - datetime.timedelta(days=365)
+    # end_date = today + datetime.timedelta(days=365)
 
-        aktivitas = random.choice([
-            "monitoring suhu tubuh",
-            "pengiriman sinyal detak jantung",
-            "cek koneksi internet",
-            "cek tekanan darah",
-            "olahraga pagi",
-            "meminum obat"
-        ])
+    # daftar aktivitas yang mungkin terjadi
+    aktivitas_list = [
+        "monitoring suhu tubuh",
+        "pengiriman sinyal detak jantung",
+        "cek koneksi internet",
+        "cek tekanan darah",
+        "olahraga pagi",
+        "meminum obat",
+        "sinkronisasi data ke server",
+        "update firmware perangkat"
+    ]
 
-        key = f"log_act:{perangkat['id']}:{tanggal}"
-        log_entry = {jam: aktivitas}
+    # untuk setiap perangkat Baymin
+    for perangkat in baymin_list:
+        id_baymin = perangkat["id"]
 
-        try:
-            (_, _, record) = aero_client.get((NAMESPACE, SET_NAME, key))
-            existing = record.get("value", {})
-            if not isinstance(existing, dict):
+        for n in range(10):
+            tanggal = fake.date_time_between(start_date='-1y', end_date='+1y').date().isoformat()
+            # tentukan jumlah aktivitas dalam hari itu (1–10 kali)
+            jumlah_aktivitas = random.randint(1, 10)
+            log_entry = {}
+
+            for _ in range(jumlah_aktivitas):
+                # buat jam acak dalam sehari
+                jam_random = datetime.time(
+                    hour=random.randint(0, 23),
+                    minute=random.randint(0, 59),
+                    second=random.randint(0, 59)
+                ).strftime("%H:%M:%S")
+
+                # pilih aktivitas secara acak
+                aktivitas = random.choice(aktivitas_list)
+
+                log_entry[jam_random] = aktivitas
+
+            # simpan ke Aerospike dengan key log_act:<id_perangkat>:<tanggal>
+            key = f"log_act:{id_baymin}:{tanggal}"
+            print(key)
+
+            try:
+                (_, _, record) = aero_client.get((NAMESPACE, SET_NAME, key))
+                existing = record.get("value", {})
+                if not isinstance(existing, dict):
+                    existing = {}
+            except aerospike.exception.RecordNotFound:
                 existing = {}
-        except aerospike.exception.RecordNotFound:
-            existing = {}
 
-        existing.update(log_entry)
-        aero_client.put((NAMESPACE, SET_NAME, key), {"value": existing})
-    print("Log aktivitas dimasukkan ke Aerospike.")
+            existing.update(log_entry)
+            aero_client.put((NAMESPACE, SET_NAME, key), {"value": existing})
+    print("Log aktivitas Baymin dimasukkan ke Aerospike.")
+
 
     # 7. Pemesanan Layanan
     layanan_docs = []

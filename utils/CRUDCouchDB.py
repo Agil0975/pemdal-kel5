@@ -157,7 +157,7 @@ def update_docs_where(db_name, selector, updates):
     """
     docs = query_docs(db_name, {"selector": selector})
     if not docs:
-        print(f"ℹTidak ada dokumen yang cocok di {db_name}")
+        print(f"Tidak ada dokumen yang cocok di {db_name}")
         return 0
 
     updated_docs = []
@@ -254,7 +254,7 @@ def delete_docs_where(db_name, selector, limit=None):
         print(f"Tidak ada dokumen yang cocok dengan kriteria di {db_name}")
         return 0
 
-    print(f"🔍 Ditemukan {len(docs_to_delete)} dokumen untuk dihapus dari {db_name}")
+    print(f"Ditemukan {len(docs_to_delete)} dokumen untuk dihapus dari {db_name}")
 
     # Step 2: Prepare bulk delete (mark with _deleted: true)
     delete_payload = []
