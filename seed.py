@@ -257,6 +257,14 @@ def run_seeder():
     print("\nSEEDER SELESAI — Semua data dummy berhasil dimasukkan ke CouchDB & Aerospike.")
     aero_client.close()
 
-
 if __name__ == "__main__":
     run_seeder()
+
+    client = aerospike.client({"hosts": [("127.0.0.1", 3000)]}).connect()
+    scan = client.scan("test", "kv")
+    count = 0
+    def cb(r):
+        global count
+        count += 1
+    scan.foreach(cb)
+    print("Total key di test.kv:", count)
