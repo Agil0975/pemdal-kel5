@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, time
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils.CRUDCouchDB import query_docs
 from utils.CRUDAerospike import kv_read
@@ -14,11 +14,14 @@ if __name__ == "__main__":
         "selector" : {"tipe_akun": "pasien"},
         "fields": ["nama_lengkap", "email"],
     }
+    start = time.time()
     pasien_list = query_docs(DB_NAME, query)
     
     for pasien in pasien_list:
         key_email = pasien["email"]
         total_pemesanan_obat = kv_read(f"user:{key_email}:pemesanan_obat")
         pasien["total_pesanan"] = len(total_pemesanan_obat) if total_pemesanan_obat else 0
-        
-    print(pasien_list)
+    
+    end = time.time()
+    print("\nHasil query:\n", pasien_list)
+    print(f"\nTime: {end - start} s")

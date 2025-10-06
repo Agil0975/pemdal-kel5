@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, time
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils.CRUDCouchDB import create_index, query_docs
 
@@ -15,5 +15,9 @@ if __name__ == "__main__":
         "fields": ["id_obat", "label", "stok"],
         "sort": [{"stok": "asc"}]
     }
+    start = time.time()
     obat_list = query_docs(DB_NAME, query)
-    print(obat_list)
+    
+    end = time.time()
+    print("\nHasil query:\n", obat_list)
+    print(f"\nTime: {end - start} s")

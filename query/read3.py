@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, time
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils.CRUDCouchDB import query_docs
 from utils.CRUDAerospike import kv_read, kv_scan
@@ -16,6 +16,7 @@ if __name__ == "__main__":
         "selector" : {"email": EMAIL_PASIEN},
         "fields": ["nama_lengkap"],
     }
+    start = time.time()
     pasien = query_docs(DB_NAME, query)[0]
     
     if not pasien:
@@ -40,4 +41,6 @@ if __name__ == "__main__":
                         }
                         results.append(result)
 
-    print(results)
+    end = time.time()
+    print("\nHasil query:\n", results)
+    print(f"\nTime: {end - start} s")
