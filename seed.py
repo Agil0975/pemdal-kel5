@@ -4,6 +4,7 @@ import datetime
 import requests
 import aerospike
 from faker import Faker
+from utils.deleteDB import clear_all_databases
 
 # ==========================
 # KONFIGURASI DATABASE
@@ -283,7 +284,11 @@ def run_seeder():
     aero_client.close()
 
 if __name__ == "__main__":
-    # run_seeder()
+    print("Clear Database")
+    clear_all_databases()
+    
+    print("\nClear Database")
+    run_seeder()
 
     client = aerospike.client({"hosts": [("127.0.0.1", 3000)]}).connect()
     scan = client.scan("halodoc", "kv")
@@ -292,4 +297,4 @@ if __name__ == "__main__":
         global count
         count += 1
     scan.foreach(cb)
-    print("Total key di halodoc.kv:", count)
+    print("\nTotal key di halodoc.kv:", count)

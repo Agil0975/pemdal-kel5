@@ -29,7 +29,7 @@ def delete_db_aerospike():
     # Hapus semua record di set
     client.truncate(NAMESPACE, SET_NAME, 0)
 
-    print(f"🧹 Semua data di {NAMESPACE}.{SET_NAME} telah dihapus.")
+    print(f"Semua data di {NAMESPACE}.{SET_NAME} telah dihapus.")
     client.close()
 
 

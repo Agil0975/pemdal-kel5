@@ -1,4 +1,5 @@
-from CRUDCouchDB import *
+from utils.CRUDAerospike import *
+from utils.CRUDCouchDB import *
 
 # --- SETUP: Create databases and seed data ---
 print("\n" + "=" * 70)
