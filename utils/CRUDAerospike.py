@@ -3,7 +3,7 @@ import json
 import time
 
 # KONFIGURASI KONEKSI
-AERO_CONFIG = {"hosts": [("127.0.0.1", 3000)]}
+AERO_CONFIG = {"hosts": [("localhost", 3000)]}
 NAMESPACE = "halodoc"
 SET_NAME = "kv"
 
@@ -58,7 +58,40 @@ def kv_read(key):
     except Exception as e:
         print(f"Gagal membaca key {key}: {e}")
         return None
+    
+def kv_scan():
+    """
+    Mengambil seluruh record key-value dari Aerospike.
+    Mengembalikan list berisi dict dengan struktur:
+    {
+        "key": <primary_key>,
+        "meta": <metadata>,
+        "bins": <isi record (bins)>
+    }
+    """
+    if not aero_client:
+        print("Koneksi Aerospike belum siap.")
+        return None
 
+    try:
+        records = []
+        scan = aero_client.scan(NAMESPACE, SET_NAME)
+
+        def collect_record(record_tuple):
+            key, meta, bins = record_tuple
+            records.append({
+                "key": key[2],  # ambil string key
+                "meta": meta,
+                "bins": bins
+            })
+
+        scan.foreach(collect_record)
+        print(f"Scan selesai. Total record: {len(records)}")
+        return records
+
+    except Exception as e:
+        print(f"Gagal melakukan scan: {e}")
+        return None
 
 # ======================================================
 # UPDATE
