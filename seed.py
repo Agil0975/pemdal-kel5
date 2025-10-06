@@ -174,8 +174,31 @@ def run_seeder():
     for i in range(5000):
         perangkat = random.choice(baymin_list)
         waktu = datetime.datetime.now() - datetime.timedelta(minutes=random.randint(1, 1000))
-        detail = random.choice(["monitoring suhu tubuh", "pengiriman sinyal detak jantung", "cek koneksi internet"])
-        kv_put(f"log_act:{perangkat['id']}:{waktu.isoformat()}", detail)
+        tanggal = waktu.date().isoformat()  # YYYY-MM-DD → untuk key
+        jam = waktu.strftime("%H:%M:%S")    # HH:MM:SS → untuk key di dictionary
+
+        aktivitas = random.choice([
+            "monitoring suhu tubuh",
+            "pengiriman sinyal detak jantung",
+            "cek koneksi internet",
+            "cek tekanan darah",
+            "olahraga pagi",
+            "meminum obat"
+        ])
+
+        key = f"log_act:{perangkat['id']}:{tanggal}"
+        log_entry = {jam: aktivitas}
+
+        try:
+            (_, _, record) = aero_client.get((NAMESPACE, SET_NAME, key))
+            existing = record.get("value", {})
+            if not isinstance(existing, dict):
+                existing = {}
+        except aerospike.exception.RecordNotFound:
+            existing = {}
+
+        existing.update(log_entry)
+        aero_client.put((NAMESPACE, SET_NAME, key), {"value": existing})
     print("Log aktivitas dimasukkan ke Aerospike.")
 
     # 7. Pemesanan Layanan
@@ -241,7 +264,7 @@ def run_seeder():
         }]
         doc = {
             "id_janji_temu": id_janji,
-            "waktu_pelaksanaan": fake.future_datetime(end_date='+30d').isoformat(),
+            "waktu_pelaksanaan": fake.date_time_between(start_date='-1y', end_date='+1y').isoformat(),
             "alasan": random.choice(["checkup", "kontrol lanjutan", "konsultasi umum"]),
             "status": status,
             "email_pasien": pasien,
@@ -260,7 +283,7 @@ def run_seeder():
     aero_client.close()
 
 if __name__ == "__main__":
-    run_seeder()
+    # run_seeder()
 
     client = aerospike.client({"hosts": [("127.0.0.1", 3000)]}).connect()
     scan = client.scan("halodoc", "kv")
