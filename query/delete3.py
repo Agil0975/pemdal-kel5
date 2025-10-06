@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 import sys
 import os
+import time
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils.CRUDCouchDB import delete_docs_where
 
@@ -20,5 +21,7 @@ if __name__ == "__main__":
     }
 
     print(f"Menghapus janji temu sebelum {cutoff_date} dan masih belum selesai.")
+    start = time.time()
     deleted_count = delete_docs_where(DB_NAME, selector, 999999)
     print(f"Total {deleted_count} janji temu dihapus.")
+    print(f"Time: {time.time() - start} s")

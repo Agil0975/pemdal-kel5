@@ -1,5 +1,6 @@
 import aerospike
 import datetime
+import time
 from aerospike.exception import RecordNotFound
 
 """
@@ -46,7 +47,7 @@ def delete_old_baymin_logs():
 
                     # Bandingkan dengan tanggal batas
                     if record_date < cutoff_date:
-                        print(f"-> Menghapus log lama: {user_key} (tanggal: {record_date.isoformat()})")
+                        # print(f"-> Menghapus log lama: {user_key} (tanggal: {record_date.isoformat()})")
                         client.remove(key_tuple)
                         deleted_count += 1
 
@@ -70,4 +71,6 @@ def delete_old_baymin_logs():
 
 
 if __name__ == "__main__":
+    start = time.time()
     delete_old_baymin_logs()
+    print(f"Time: {time.time() - start} s")

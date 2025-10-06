@@ -1,6 +1,6 @@
-import json
 import sys
 import os
+import time
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils.CRUDCouchDB import query_docs, update_doc
 
@@ -45,5 +45,8 @@ def batalkan_pemesanan_layanan(id_pesanan: str):
         print(f"Sukses! Pemesanan layanan '{id_pesanan}' telah dibatalkan.")
 
 if __name__ == "__main__":
-    id_layanan_untuk_dibatalkan = "PL001"    
+    id_layanan_untuk_dibatalkan = "PL001"
+    
+    start = time.time() 
     batalkan_pemesanan_layanan(id_layanan_untuk_dibatalkan)
+    print(f"Time: {time.time() - start} s")

@@ -1,6 +1,6 @@
-import json
 import sys
 import os
+import time
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils.CRUDCouchDB import query_docs, update_doc, insert_docs
 
@@ -70,4 +70,7 @@ if __name__ == "__main__":
     rs_tujuan = "RS042"
     dept_tujuan = "Radiologi"
 
+    start = time.time()
     pindahkan_tenaga_medis(email_dokter, rs_tujuan, dept_tujuan)
+    print(f"Time: {time.time() - start} s")
+    

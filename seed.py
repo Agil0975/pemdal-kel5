@@ -217,7 +217,6 @@ def run_seeder():
 
             # simpan ke Aerospike dengan key log_act:<id_perangkat>:<tanggal>
             key = f"log_act:{id_baymin}:{tanggal}"
-            print(key)
 
             try:
                 (_, _, record) = aero_client.get((NAMESPACE, SET_NAME, key), policy=READ_POLICY)
@@ -314,17 +313,16 @@ def run_seeder():
     aero_client.close()
 
 if __name__ == "__main__":
-    # print("Clear Database")
-    # clear_all_databases()
+    print("Clear Database")
+    clear_all_databases()
     
-    # print("\nClear Database")
-    # run_seeder()
+    print("\nRun Seeder")
+    run_seeder()
 
     client = aerospike.client({"hosts": [("127.0.0.1", 3000)]}).connect()
     scan = client.scan("halodoc", "kv")
     count = 0
     def cb(r):
-        print(r)
         global count
         count += 1
     scan.foreach(cb)
