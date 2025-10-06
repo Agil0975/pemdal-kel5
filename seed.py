@@ -228,6 +228,7 @@ def run_seeder():
     janji_docs = []
     for i in range(5000):
         id_janji = f"JT{i+1:03d}"
+        status = random.choice(STATUS_ENUM)
         pasien = random.choice(pasien_emails)
         dokter = random.choice(tenaga_medis_emails)
         rs = random.choice(rumah_sakit_docs)
@@ -242,6 +243,7 @@ def run_seeder():
             "id_janji_temu": id_janji,
             "waktu_pelaksanaan": fake.future_datetime(end_date='+30d').isoformat(),
             "alasan": random.choice(["checkup", "kontrol lanjutan", "konsultasi umum"]),
+            "status": status,
             "email_pasien": pasien,
             "email_tenaga_medis": dokter,
             "rs": rs["alamat"] | {"nama_rs": rs["nama"]},
