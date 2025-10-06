@@ -30,27 +30,27 @@ fake = Faker("id_ID")
 def create_db(db_name):
     res = requests.put(f"{COUCHDB_URL}/{db_name}", auth=COUCHDB_AUTH)
     if res.status_code in [201, 412]:
-        print(f"✅ Database {db_name} siap.")
+        print(f"Database {db_name} siap.")
     else:
-        print(f"❌ Gagal membuat database {db_name}: {res.text}")
+        print(f"Gagal membuat database {db_name}: {res.text}")
 
 
 def insert_docs(db_name, docs):
     url = f"{COUCHDB_URL}/{db_name}/_bulk_docs"
     res = requests.post(url, json={"docs": docs}, auth=COUCHDB_AUTH)
     if res.status_code in [201, 202]:
-        print(f"✅ {len(docs)} dokumen dimasukkan ke {db_name}.")
+        print(f"{len(docs)} dokumen dimasukkan ke {db_name}.")
     else:
-        print(f"❌ Insert gagal ke {db_name}: {res.text}")
+        print(f"Insert gagal ke {db_name}: {res.text}")
 
 # ==========================
 # HELPER: Aerospike
 # ==========================
 try:
     aero_client = aerospike.client(AERO_CONFIG).connect()
-    print("✅ Terhubung ke Aerospike.")
+    print("Terhubung ke Aerospike.")
 except Exception as e:
-    print(f"❌ Gagal konek ke Aerospike: {e}")
+    print(f"Gagal konek ke Aerospike: {e}")
     aero_client = None
 
 
@@ -74,11 +74,11 @@ def kv_append(key, value):
 # SEEDER
 # ==========================
 def run_seeder():
-    # 1️⃣ Siapkan DB untuk dokumen
+    # 1. Siapkan DB untuk dokumen
     for db in ["user", "rumah_sakit", "pemesanan_layanan", "pemesanan_obat", "janji_temu"]:
         create_db(db)
 
-    # 2️⃣ User (pasien + tenaga medis)
+    # 2. User (pasien + tenaga medis)
     users = []
     pasien_emails, tenaga_medis_emails = [], []
 
@@ -123,7 +123,7 @@ def run_seeder():
 
     insert_docs("user", users)
 
-    # 3️⃣ Rumah sakit
+    # 3. Rumah sakit
     rumah_sakit_docs = []
     for i in range(100):
         id_rs = f"RS{i+1:02d}"
@@ -143,7 +143,7 @@ def run_seeder():
         })
     insert_docs("rumah_sakit", rumah_sakit_docs)
 
-    # 4️⃣ Obat (disimpan di Aerospike)
+    # 4. Obat (disimpan di Aerospike)
     for i in range(500):
         id_obat = f"OB{i+1:03d}"
         nama = fake.word().capitalize()
@@ -156,9 +156,9 @@ def run_seeder():
         kv_put(f"obat:{id_obat}:harga", harga)
         kv_put(f"obat:{id_obat}:stok", stok)
 
-    print("💊 Obat dimasukkan ke Aerospike")
+    print("Obat dimasukkan ke Aerospike")
 
-    # 5️⃣ Baymin (key-value)
+    # 5. Baymin (key-value)
     baymin_list = []
     for i in range(1000):
         id_baymin = f"BM{i+1:03d}"
@@ -168,17 +168,17 @@ def run_seeder():
         if email_pasien:
             kv_put(f"baymin:{id_baymin}:email_pasien", email_pasien)
         baymin_list.append({"id": id_baymin, "email": email_pasien})
-    print("🤖 Baymin dimasukkan ke Aerospike")
+    print("Baymin dimasukkan ke Aerospike")
 
-    # 6️⃣ Log Aktivitas Baymin (key-value)
+    # 6. Log Aktivitas Baymin (key-value)
     for i in range(5000):
         perangkat = random.choice(baymin_list)
         waktu = datetime.datetime.now() - datetime.timedelta(minutes=random.randint(1, 1000))
         detail = random.choice(["monitoring suhu tubuh", "pengiriman sinyal detak jantung", "cek koneksi internet"])
         kv_put(f"log_act:{perangkat['id']}:{waktu.isoformat()}", detail)
-    print("📋 Log aktivitas dimasukkan ke Aerospike")
+    print("Log aktivitas dimasukkan ke Aerospike")
 
-    # 7️⃣ Pemesanan Layanan
+    # 7. Pemesanan Layanan
     layanan_docs = []
     for i in range(5000):
         email = random.choice(pasien_emails)
@@ -198,7 +198,7 @@ def run_seeder():
         kv_append(f"user:{email}:pemesanan_layanan", id_pesanan)
     insert_docs("pemesanan_layanan", layanan_docs)
 
-    # 8️⃣ Pemesanan Obat
+    # 8. Pemesanan Obat
     pemesanan_obat_docs = []
     for i in range(5000):
         email = random.choice(pasien_emails)
@@ -225,7 +225,7 @@ def run_seeder():
         kv_append(f"user:{email}:pemesanan_obat", id_pesanan)
     insert_docs("pemesanan_obat", pemesanan_obat_docs)
 
-    # 9️⃣ Janji Temu
+    # 9. Janji Temu
     janji_docs = []
     for i in range(5000):
         id_janji = f"JT{i+1:03d}"
@@ -253,7 +253,7 @@ def run_seeder():
         kv_append(f"rs:{rs['id_rs']}:janji_temu", id_janji)
     insert_docs("janji_temu", janji_docs)
 
-    print("\n🎉 SEEDER SELESAI — Semua data dummy berhasil dimasukkan ke CouchDB & Aerospike.")
+    print("\nSEEDER SELESAI — Semua data dummy berhasil dimasukkan ke CouchDB & Aerospike.")
     aero_client.close()
 
 
