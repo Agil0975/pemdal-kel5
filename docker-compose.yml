@@ -24,6 +24,7 @@ services:
       - "3003:3003"   # info
     volumes:
       - ./aerospike:/opt/aerospike/etc
+      - aerospike_data:/opt/aerospike/data
     command: [asd, --config-file, /opt/aerospike/etc/aerospike.conf]
 
 volumes:

@@ -15,6 +15,8 @@ AERO_CONFIG = {"hosts": [("127.0.0.1", 3000)]}
 
 NAMESPACE = "halodoc"
 SET_NAME = "kv"
+WRITE_POLICY = {"send_key": True}
+READ_POLICY = {"send_key": True}
 
 # ==========================
 # ENUM DAN UTILITAS
@@ -57,19 +59,25 @@ except Exception as e:
 
 def kv_put(key, value):
     if aero_client:
-        aero_client.put((NAMESPACE, SET_NAME, key), {"value": value})
+        aero_client.put((NAMESPACE, SET_NAME, key), value, policy=WRITE_POLICY)
 
 
 def kv_append(key, value):
     if not aero_client:
         return
     try:
-        (_, _, record) = aero_client.get((NAMESPACE, SET_NAME, key))
+        (_, _, record) = aero_client.get((NAMESPACE, SET_NAME, key), policy=READ_POLICY)
         existing = record.get("value", [])
+        key = record.get("key", "")
+        
     except aerospike.exception.RecordNotFound:
         existing = []
+        
+    if not isinstance(existing, list):
+        existing = []
+
     existing.append(value)
-    aero_client.put((NAMESPACE, SET_NAME, key), {"value": existing})
+    aero_client.put((NAMESPACE, SET_NAME, key), {"value": existing, "key": key}, policy=WRITE_POLICY)
 
 
 # ==========================
@@ -165,17 +173,13 @@ def run_seeder():
         id_baymin = f"BM{i+1:03d}"
         warna = random.choice(["hitam", "putih", "merah", "biru"])
         email_pasien = random.choice(pasien_emails) if random.random() < 0.8 else None
-        kv_put(f"baymin:{id_baymin}:warna", warna)
+        kv_put(f"baymin:{id_baymin}:warna", {"value": warna, "key": f"baymin:{id_baymin}:warna"})
         if email_pasien:
-            kv_put(f"baymin:{id_baymin}:email_pasien", email_pasien)
+            kv_put(f"baymin:{id_baymin}:email_pasien", {"value": email_pasien, "key": f"baymin:{id_baymin}:email_pasien"})
         baymin_list.append({"id": id_baymin, "email": email_pasien})
     print("Baymin dimasukkan ke Aerospike.")
 
     # 6. Log Aktivitas Baymin (key-value)
-    # today = datetime.date.today()
-    # start_date = today - datetime.timedelta(days=365)
-    # end_date = today + datetime.timedelta(days=365)
-
     # daftar aktivitas yang mungkin terjadi
     aktivitas_list = [
         "monitoring suhu tubuh",
@@ -216,7 +220,7 @@ def run_seeder():
             print(key)
 
             try:
-                (_, _, record) = aero_client.get((NAMESPACE, SET_NAME, key))
+                (_, _, record) = aero_client.get((NAMESPACE, SET_NAME, key), policy=READ_POLICY)
                 existing = record.get("value", {})
                 if not isinstance(existing, dict):
                     existing = {}
@@ -224,7 +228,7 @@ def run_seeder():
                 existing = {}
 
             existing.update(log_entry)
-            aero_client.put((NAMESPACE, SET_NAME, key), {"value": existing})
+            aero_client.put((NAMESPACE, SET_NAME, key), {"value": existing, "key": key}, policy=WRITE_POLICY)
     print("Log aktivitas Baymin dimasukkan ke Aerospike.")
 
 
@@ -245,7 +249,7 @@ def run_seeder():
             "layanan": layanan
         }
         layanan_docs.append(doc)
-        kv_append(f"user:{email}:pemesanan_layanan", id_pesanan)
+        kv_append(f"user:{email}:pemesanan_layanan", {"value": id_pesanan, "key": f"user:{email}:pemesanan_layanan"})
     insert_docs("pemesanan_layanan", layanan_docs)
 
     # 8. Pemesanan Obat
@@ -271,7 +275,7 @@ def run_seeder():
             "detail_pesanan": detail_pesanan
         }
         pemesanan_obat_docs.append(doc)
-        kv_append(f"user:{email}:pemesanan_obat", id_pesanan)
+        kv_append(f"user:{email}:pemesanan_obat", {"value": id_pesanan, "key": f"user:{email}:pemesanan_obat"})
     insert_docs("pemesanan_obat", pemesanan_obat_docs)
 
     # 9. Janji Temu
@@ -301,25 +305,26 @@ def run_seeder():
             "detail_resep": detail_resep
         }
         janji_docs.append(doc)
-        kv_append(f"user:{pasien}:janji_temu", id_janji)
-        kv_append(f"tenaga_medis:{dokter}:janji_temu", id_janji)
-        kv_append(f"rs:{rs['id_rs']}:janji_temu", id_janji)
+        kv_append(f"user:{pasien}:janji_temu", {"value": id_janji, "key": f"user:{pasien}:janji_temu"})
+        kv_append(f"tenaga_medis:{dokter}:janji_temu", {"value": id_janji, "key": f"tenaga_medis:{dokter}:janji_temu"})
+        kv_append(f"rs:{rs['id_rs']}:janji_temu", {"value": id_janji, "key": f"rs:{rs['id_rs']}:janji_temu"})
     insert_docs("janji_temu", janji_docs)
 
     print("\nSEEDER SELESAI — Semua data dummy berhasil dimasukkan ke CouchDB & Aerospike.")
     aero_client.close()
 
 if __name__ == "__main__":
-    print("Clear Database")
-    clear_all_databases()
+    # print("Clear Database")
+    # clear_all_databases()
     
-    print("\nClear Database")
-    run_seeder()
+    # print("\nClear Database")
+    # run_seeder()
 
     client = aerospike.client({"hosts": [("127.0.0.1", 3000)]}).connect()
     scan = client.scan("halodoc", "kv")
     count = 0
     def cb(r):
+        print(r)
         global count
         count += 1
     scan.foreach(cb)

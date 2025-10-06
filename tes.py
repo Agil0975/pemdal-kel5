@@ -5,15 +5,16 @@ NAMESPACE = "halodoc"
 SET_NAME = "kv"
 
 # Key yang ingin diambil
-user_key = "log_act:BM998:2024-12-23"
+user_key = "log_act:BM1000:2025-09-23"
 
 # Buat tuple key Aerospike: (namespace, set, user_key)
 key_tuple = (NAMESPACE, SET_NAME, user_key)
+read_policy = {"send_key": True} 
 
 try:
     client = aerospike.client(AERO_CONFIG).connect()
 
-    (key, meta, record) = client.get(key_tuple)
+    (key, meta, record) = client.get(key_tuple, policy=read_policy)
     print("Record ditemukan:")
     print("Key:", key)
     print("Metadata:", meta)
