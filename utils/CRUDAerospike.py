@@ -20,24 +20,16 @@ except Exception as e:
 # ======================================================
 def kv_insert(key, value):
     """
-    Insert one key-value pair into Aerospike.
-    
-    Args:
-        key (str): the key to insert
-        value (any): the value to insert
-        
-    Returns:
-        bool: True if insert successful, False otherwise
-        
-    Example:
-        kv_insert("user_001", {"name": "Alice", "age": 30})
+    Menyisipkan satu pasangan key-value ke Aerospike dengan skema baru.
+    Record akan berisi: {"key": key, "value": value}
     """
     if not aero_client:
         print("Koneksi Aerospike belum siap.")
         return False
 
     try:
-        aero_client.put((NAMESPACE, SET_NAME, key), {"value": value})
+        record_bins = {"key": key, "value": value}
+        aero_client.put((NAMESPACE, SET_NAME, key), record_bins)
         print(f"Insert ke KV (key: {key}) berhasil.")
         return True
     except Exception as e:
@@ -50,16 +42,7 @@ def kv_insert(key, value):
 # ======================================================
 def kv_read(key):
     """
-    Retrieve value by key from Aerospike.
-
-    Args:
-        key (str): the key to read
-
-    Returns:
-        any: the value associated with the key, or None if not found
-        
-    Example:
-        value = kv_read("user_001")
+    Mengambil seluruh record (termasuk key dan value) berdasarkan key.
     """
     if not aero_client:
         print("Koneksi Aerospike belum siap.")
@@ -67,9 +50,8 @@ def kv_read(key):
 
     try:
         (_, _, record) = aero_client.get((NAMESPACE, SET_NAME, key))
-        value = record.get("value") if record else None
-        print(f"Baca key '{key}': {value}")
-        return value
+        print(f"Baca key '{key}': {record}")
+        return record
     except aerospike.exception.RecordNotFound:
         print(f"Key '{key}' tidak ditemukan.")
         return None
@@ -83,17 +65,7 @@ def kv_read(key):
 # ======================================================
 def kv_update(key, new_value):
     """
-    Update the value of an existing key in Aerospike.
-    
-    Args:
-        key (str): the key to update
-        new_value (any): the new value to set
-    
-    Returns:
-        bool: True if update successful, False otherwise
-        
-    Example:
-        kv_update("user_001", {"name": "Alice", "age": 31})
+    Memperbarui bin 'value' dari sebuah key yang sudah ada.
     """
     if not aero_client:
         print("Koneksi Aerospike belum siap.")
@@ -101,7 +73,8 @@ def kv_update(key, new_value):
 
     try:
         aero_client.get((NAMESPACE, SET_NAME, key))
-        aero_client.put((NAMESPACE, SET_NAME, key), {"value": new_value})
+        record_bins = {"key": key, "value": new_value}
+        aero_client.put((NAMESPACE, SET_NAME, key), record_bins)
         print(f"Key '{key}' berhasil diperbarui.")
         return True
     except aerospike.exception.RecordNotFound:
@@ -117,16 +90,8 @@ def kv_update(key, new_value):
 # ======================================================
 def kv_delete(key):
     """
-    Delete a key-value pair from Aerospike by key.
-    
-    Args:
-        key (str): the key to delete
-        
-    Returns:
-        bool: True if delete successful, False otherwise
-        
-    Example:
-        kv_delete("user_001")
+    Menghapus pasangan key-value dari Aerospike berdasarkan key.
+    (Tidak perlu diubah, karena 'remove' bekerja pada primary key)
     """
     if not aero_client:
         print("Koneksi Aerospike belum siap.")
@@ -149,16 +114,7 @@ def kv_delete(key):
 # ======================================================
 def kv_bulk_insert(data_dict):
     """
-    Insert many key-value pairs into Aerospike.
-    
-    Args:
-        data_dict (dict): pasangan key-value
-    
-    Returns:
-        int: jumlah insert sukses
-    
-    Example:
-        kv_bulk_insert({"user_001": {"name": "Alice"}, "user_002": {"name": "Bob"}})    
+    Menyisipkan banyak pasangan key-value ke Aerospike.
     """
     if not aero_client:
         print("Koneksi Aerospike belum siap.")
@@ -168,7 +124,8 @@ def kv_bulk_insert(data_dict):
     success = 0
     for key, value in data_dict.items():
         try:
-            aero_client.put((NAMESPACE, SET_NAME, key), {"value": value})
+            record_bins = {"key": key, "value": value}
+            aero_client.put((NAMESPACE, SET_NAME, key), record_bins)
             success += 1
         except Exception as e:
             print(f"Gagal insert {key}: {e}")
@@ -183,16 +140,7 @@ def kv_bulk_insert(data_dict):
 # ======================================================
 def kv_bulk_read(keys):
     """
-    Retrieve many values by their keys from Aerospike.
-    
-    Args:
-        keys (list): daftar key
-    
-    Returns:
-        dict: pasangan key-value (None jika tidak ditemukan)
-        
-    Example:
-        results = kv_bulk_read(["user_001", "user_002"])
+    Mengambil banyak record berdasarkan daftar key.
     """
     if not aero_client:
         print("Koneksi Aerospike belum siap.")
@@ -201,15 +149,16 @@ def kv_bulk_read(keys):
     start = time.time()
     results = {}
 
-    for key in keys:
-        try:
-            (_, _, record) = aero_client.get((NAMESPACE, SET_NAME, key))
-            results[key] = record.get("value") if record else None
-        except aerospike.exception.RecordNotFound:
-            results[key] = None
-        except Exception as e:
-            print(f"Gagal baca key {key}: {e}")
-            results[key] = None
+    key_tuples = [(NAMESPACE, SET_NAME, k) for k in keys]
+    records = aero_client.get_many(key_tuples)
+    
+    for key_tuple, record_data in records:
+        key_str = key_tuple[2]
+        if record_data:
+            # record_data[2] adalah kamus bin
+            results[key_str] = record_data[2]
+        else:
+            results[key_str] = None
 
     dur = (time.time() - start) * 1000
     print(f"Bulk read {len(keys)} key selesai dalam {dur:.2f} ms.")
@@ -221,16 +170,7 @@ def kv_bulk_read(keys):
 # ======================================================
 def kv_bulk_update(data_dict):
     """
-    Update many key-value pairs in Aerospike.
-    
-    Args:
-        data_dict (dict): pasangan key-value baru
-        
-    Returns:
-        int: jumlah update sukses
-        
-    Example:
-        kv_bulk_update({"user_001": {"name": "Alice", "age": 30}, "user_002": {"name": "Bob", "age": 25}})
+    Memperbarui banyak pasangan key-value di Aerospike.
     """
     if not aero_client:
         print("Koneksi Aerospike belum siap.")
@@ -241,8 +181,10 @@ def kv_bulk_update(data_dict):
 
     for key, new_value in data_dict.items():
         try:
-            aero_client.get((NAMESPACE, SET_NAME, key))
-            aero_client.put((NAMESPACE, SET_NAME, key), {"value": new_value})
+            ops = [
+                aerospike.operations.write("value", new_value)
+            ]
+            aero_client.operate((NAMESPACE, SET_NAME, key), ops)
             success += 1
         except aerospike.exception.RecordNotFound:
             print(f"Key '{key}' tidak ditemukan (skip).")
@@ -259,16 +201,8 @@ def kv_bulk_update(data_dict):
 # ======================================================
 def kv_bulk_delete(keys):
     """
-    Delete many key-value pairs from Aerospike by their keys.
-    
-    Args:
-        keys (list): daftar keys to delete
-    
-    Returns:
-        int: jumlah delete sukses
-        
-    Example:
-        kv_bulk_delete(["user_001", "user_002"])
+    Menghapus banyak pasangan key-value dari Aerospike.
+    (Tidak perlu diubah, tapi bisa dibuat lebih efisien)
     """
     if not aero_client:
         print("Koneksi Aerospike belum siap.")
@@ -276,15 +210,18 @@ def kv_bulk_delete(keys):
 
     start = time.time()
     success = 0
-
-    for key in keys:
-        try:
-            aero_client.remove((NAMESPACE, SET_NAME, key))
+    
+    key_tuples = [(NAMESPACE, SET_NAME, k) for k in keys]
+    results = aero_client.remove_many(key_tuples)
+    
+    for key_tuple, result_code in results:
+        key_str = key_tuple[2]
+        if result_code == aerospike.OK:
             success += 1
-        except aerospike.exception.RecordNotFound:
-            print(f"Key '{key}' tidak ditemukan (skip).")
-        except Exception as e:
-            print(f"Gagal hapus {key}: {e}")
+        elif result_code == aerospike.ERR_RECORD_NOT_FOUND:
+            print(f"Key '{key_str}' tidak ditemukan (skip).")
+        else:
+            print(f"Gagal hapus {key_str} dengan kode error: {result_code}")
 
     dur = (time.time() - start) * 1000
     print(f"Bulk delete {success}/{len(keys)} key selesai dalam {dur:.2f} ms.")
