@@ -70,12 +70,13 @@ def kv_append(key, value):
     existing.append(value)
     aero_client.put((NAMESPACE, SET_NAME, key), {"value": existing})
 
+
 # ==========================
 # SEEDER
 # ==========================
 def run_seeder():
     # 1. Siapkan DB untuk dokumen
-    for db in ["user", "rumah_sakit", "pemesanan_layanan", "pemesanan_obat", "janji_temu"]:
+    for db in ["user", "rumah_sakit", "obat", "pemesanan_layanan", "pemesanan_obat", "janji_temu"]:
         create_db(db)
 
     # 2. User (pasien + tenaga medis)
@@ -143,22 +144,21 @@ def run_seeder():
         })
     insert_docs("rumah_sakit", rumah_sakit_docs)
 
-    # 4. Obat (disimpan di Aerospike)
+    # 4. Obat — SEKARANG DI COUCHDB
+    obat_docs = []
     for i in range(500):
         id_obat = f"OB{i+1:03d}"
-        nama = fake.word().capitalize()
-        label = random.choice(OBAT_LABELS)
-        harga = random.randint(5000, 50000)
-        stok = random.randint(10, 200)
+        obat_docs.append({
+            "id_obat": id_obat,
+            "nama": fake.word().capitalize(),
+            "label": random.choice(OBAT_LABELS),
+            "harga": random.randint(5000, 50000),
+            "stok": random.randint(10, 200)
+        })
+    insert_docs("obat", obat_docs)
+    print("Data obat dimasukkan ke CouchDB.")
 
-        kv_put(f"obat:{id_obat}:nama", nama)
-        kv_put(f"obat:{id_obat}:label", label)
-        kv_put(f"obat:{id_obat}:harga", harga)
-        kv_put(f"obat:{id_obat}:stok", stok)
-
-    print("Obat dimasukkan ke Aerospike")
-
-    # 5. Baymin (key-value)
+    # 5. Baymin (tetap di Aerospike)
     baymin_list = []
     for i in range(1000):
         id_baymin = f"BM{i+1:03d}"
@@ -168,7 +168,7 @@ def run_seeder():
         if email_pasien:
             kv_put(f"baymin:{id_baymin}:email_pasien", email_pasien)
         baymin_list.append({"id": id_baymin, "email": email_pasien})
-    print("Baymin dimasukkan ke Aerospike")
+    print("Baymin dimasukkan ke Aerospike.")
 
     # 6. Log Aktivitas Baymin (key-value)
     for i in range(5000):
@@ -176,7 +176,7 @@ def run_seeder():
         waktu = datetime.datetime.now() - datetime.timedelta(minutes=random.randint(1, 1000))
         detail = random.choice(["monitoring suhu tubuh", "pengiriman sinyal detak jantung", "cek koneksi internet"])
         kv_put(f"log_act:{perangkat['id']}:{waktu.isoformat()}", detail)
-    print("Log aktivitas dimasukkan ke Aerospike")
+    print("Log aktivitas dimasukkan ke Aerospike.")
 
     # 7. Pemesanan Layanan
     layanan_docs = []
@@ -205,14 +205,13 @@ def run_seeder():
         id_pesanan = f"PO{i+1:03d}"
         detail_pesanan = []
         for _ in range(random.randint(1, 3)):
-            id_obat = f"OB{random.randint(1,10):03d}"
-            harga = random.randint(5000, 50000)
-            label = random.choice(OBAT_LABELS)
+            obat = random.choice(obat_docs)
             detail_pesanan.append({
-                "id_obat": id_obat,
+                "id_obat": obat["id_obat"],
+                "nama_obat": obat["nama"],
                 "jumlah": random.randint(1, 5),
-                "harga_satuan": harga,
-                "label_obat": label
+                "harga_satuan": obat["harga"],
+                "label_obat": obat["label"]
             })
         doc = {
             "id_pesanan": id_pesanan,
@@ -232,10 +231,12 @@ def run_seeder():
         pasien = random.choice(pasien_emails)
         dokter = random.choice(tenaga_medis_emails)
         rs = random.choice(rumah_sakit_docs)
+        obat = random.choice(obat_docs)
         detail_resep = [{
-            "id_obat": f"OB{random.randint(1,10):03d}",
+            "id_obat": obat["id_obat"],
+            "nama_obat": obat["nama"],
             "dosis": f"{random.randint(1,3)}x sehari",
-            "label_obat": random.choice(OBAT_LABELS)
+            "label_obat": obat["label"]
         }]
         doc = {
             "id_janji_temu": id_janji,
