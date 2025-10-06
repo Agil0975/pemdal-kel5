@@ -7,7 +7,9 @@ from datetime import datetime, timedelta
 COUCHDB_URL = "http://127.0.0.1:5984"
 AUTH = ("admin", "admin123")
 
-
+# ======================================================
+# READ
+# ======================================================
 def query_docs(db_name, query):
     """
     Query CouchDB database with a Mango query.
@@ -33,10 +35,12 @@ def query_docs(db_name, query):
     if res.status_code == 200:
         return res.json()["docs"]
     else:
-        print(f"❌ Query gagal pada {db_name}: {res.text}")
+        print(f"Query gagal pada {db_name}: {res.text}")
         return []
 
-
+# ======================================================
+# INSERT
+# ======================================================
 def insert_docs(db_name, docs):
     """
     Insert one or multiple documents into CouchDB.
@@ -69,16 +73,16 @@ def insert_docs(db_name, docs):
         res = requests.post(url, json=docs, auth=AUTH)
 
         if res.status_code == 201:
-            print(f"✅ Insert ke {db_name} (ID: {docs.get('_id', 'auto')}): Sukses")
+            print(f"Insert ke {db_name} (ID: {docs.get('_id', 'auto')}): Sukses")
             return res.json()
         elif res.status_code == 409:  # Conflict
             print(
-                f"⚠️ Insert ke {db_name} (ID: {docs.get('_id', 'auto')}): Conflict (ID sudah ada)"
+                f"Insert ke {db_name} (ID: {docs.get('_id', 'auto')}): Conflict (ID sudah ada)"
             )
             return None
         else:
             print(
-                f"❌ Insert ke {db_name} (ID: {docs.get('_id', 'auto')}): Gagal - {res.json()}"
+                f"Insert ke {db_name} (ID: {docs.get('_id', 'auto')}): Gagal - {res.json()}"
             )
             return None
 
@@ -93,17 +97,21 @@ def insert_docs(db_name, docs):
             success_count = sum(1 for r in results if r.get("ok"))
             error_count = len(results) - success_count
             print(
-                f"✅ Bulk insert ke {db_name}: {success_count} sukses, {error_count} gagal"
+                f"Bulk insert ke {db_name}: {success_count} sukses, {error_count} gagal"
             )
             return results
         else:
-            print(f"❌ Bulk insert ke {db_name} gagal: {res.text}")
+            print(f"Bulk insert ke {db_name} gagal: {res.text}")
             return None
 
     else:
-        print(f"❌ Invalid input type. Expected dict or list, got {type(docs)}")
+        print(f"Invalid input type. Expected dict or list, got {type(docs)}")
         return None
 
+
+# ======================================================
+# UPDATE
+# ======================================================
 def update_doc(db_name, doc_id, updates):
     """
     Update a document in CouchDB by its _id.
@@ -116,15 +124,15 @@ def update_doc(db_name, doc_id, updates):
     Returns:
         dict or None: Response hasil update dari CouchDB.
     
-    Contoh:
-        update_doc("users", "user123", {"nama_lengkap": "Agil F. Sabri"})
+    Example:
+        update_doc("users", "user123", {"nama_lengkap": "Ahmad Updated", "role": "admin"})
     """
     # Ambil dokumen lama
     url_get = f"{COUCHDB_URL}/{db_name}/{doc_id}"
     res_get = requests.get(url_get, auth=AUTH)
 
     if res_get.status_code != 200:
-        print(f"❌ Dokumen {doc_id} tidak ditemukan di {db_name}")
+        print(f"Dokumen {doc_id} tidak ditemukan di {db_name}")
         return None
 
     doc = res_get.json()
@@ -137,10 +145,10 @@ def update_doc(db_name, doc_id, updates):
     res_put = requests.put(url_put, json=doc, auth=AUTH)
 
     if res_put.status_code in [200, 201]:
-        print(f"✅ Dokumen {doc_id} diupdate di {db_name}")
+        print(f"Dokumen {doc_id} diupdate di {db_name}")
         return res_put.json()
     else:
-        print(f"❌ Gagal update {doc_id}: {res_put.text}")
+        print(f"Gagal update {doc_id}: {res_put.text}")
         return None
 
 def update_docs_where(db_name, selector, updates):
@@ -149,7 +157,7 @@ def update_docs_where(db_name, selector, updates):
     """
     docs = query_docs(db_name, {"selector": selector})
     if not docs:
-        print(f"ℹ️ Tidak ada dokumen yang cocok di {db_name}")
+        print(f"ℹTidak ada dokumen yang cocok di {db_name}")
         return 0
 
     updated_docs = []
@@ -162,12 +170,15 @@ def update_docs_where(db_name, selector, updates):
 
     if res.status_code in [201, 202]:
         success = sum(1 for r in res.json() if r.get("ok"))
-        print(f"✅ Berhasil update {success} dokumen di {db_name}")
+        print(f"Berhasil update {success} dokumen di {db_name}")
         return success
     else:
-        print(f"❌ Gagal update dokumen: {res.text}")
+        print(f"Gagal update dokumen: {res.text}")
         return 0
 
+# ======================================================
+# DELETE
+# ======================================================
 def delete_doc(db_name, doc_id):
     """
     Menghapus satu dokumen dari CouchDB berdasarkan _id.
@@ -187,7 +198,7 @@ def delete_doc(db_name, doc_id):
     res_get = requests.get(url_get, auth=AUTH)
 
     if res_get.status_code != 200:
-        print(f"❌ Dokumen {doc_id} tidak ditemukan di {db_name}")
+        print(f"Dokumen {doc_id} tidak ditemukan di {db_name}")
         return False
 
     doc = res_get.json()
@@ -198,12 +209,11 @@ def delete_doc(db_name, doc_id):
     res_del = requests.delete(url_delete, auth=AUTH)
 
     if res_del.status_code in [200, 202]:
-        print(f"🗑️ Dokumen {doc_id} berhasil dihapus dari {db_name}")
+        print(f"Dokumen {doc_id} berhasil dihapus dari {db_name}")
         return True
     else:
-        print(f"❌ Gagal menghapus {doc_id}: {res_del.text}")
+        print(f"Gagal menghapus {doc_id}: {res_del.text}")
         return False
-
 
 def delete_docs_where(db_name, selector, limit=None):
     """
@@ -241,7 +251,7 @@ def delete_docs_where(db_name, selector, limit=None):
     docs_to_delete = query_docs(db_name, query)
 
     if not docs_to_delete:
-        print(f"ℹ️ Tidak ada dokumen yang cocok dengan kriteria di {db_name}")
+        print(f"Tidak ada dokumen yang cocok dengan kriteria di {db_name}")
         return 0
 
     print(f"🔍 Ditemukan {len(docs_to_delete)} dokumen untuk dihapus dari {db_name}")
@@ -261,10 +271,10 @@ def delete_docs_where(db_name, selector, limit=None):
     if res.status_code in [201, 202]:
         results = res.json()
         success_count = sum(1 for r in results if r.get("ok"))
-        print(f"✅ Berhasil menghapus {success_count} dokumen dari {db_name}")
+        print(f"Berhasil menghapus {success_count} dokumen dari {db_name}")
         return success_count
     else:
-        print(f"❌ Gagal menghapus dokumen dari {db_name}: {res.text}")
+        print(f"Gagal menghapus dokumen dari {db_name}: {res.text}")
         return 0
 
 
@@ -294,10 +304,10 @@ def create_index(db_name, fields, index_name=None):
     res = requests.post(url, json=index_def, auth=AUTH)
 
     if res.status_code in [200, 201]:
-        print(f"✅ Index created on {db_name}: {fields}")
+        print(f"Index created on {db_name}: {fields}")
         return True
     else:
-        print(f"❌ Failed to create index on {db_name}: {res.text}")
+        print(f"Failed to create index on {db_name}: {res.text}")
         return False
 
 
