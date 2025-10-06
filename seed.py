@@ -22,10 +22,24 @@ READ_POLICY = {"send_key": True}
 # ENUM DAN UTILITAS
 # ==========================
 OBAT_LABELS = ["analgesik", "antibiotik", "obat herbal"]
-LAYANAN_ENUM = ["vaksinasi", "fisioterapi", "laboratorium", "radiologi", "konsultasi", "rehabilitasi"]
-STATUS_ENUM = ["belum dibayar", "dijadwalkan", "sedang berlangsung", "selesai", "dibatalkan"]
+LAYANAN_ENUM = [
+    "vaksinasi",
+    "fisioterapi",
+    "laboratorium",
+    "radiologi",
+    "konsultasi",
+    "rehabilitasi",
+]
+STATUS_ENUM = [
+    "belum dibayar",
+    "dijadwalkan",
+    "sedang berlangsung",
+    "selesai",
+    "dibatalkan",
+]
 
 fake = Faker("id_ID")
+
 
 # ==========================
 # HELPER: CouchDB
@@ -45,6 +59,7 @@ def insert_docs(db_name, docs):
         print(f"{len(docs)} dokumen dimasukkan ke {db_name}.")
     else:
         print(f"Insert gagal ke {db_name}: {res.text}")
+
 
 # ==========================
 # HELPER: Aerospike
@@ -69,15 +84,17 @@ def kv_append(key, value):
         (_, _, record) = aero_client.get((NAMESPACE, SET_NAME, key), policy=READ_POLICY)
         existing = record.get("value", [])
         key = record.get("key", "")
-        
+
     except aerospike.exception.RecordNotFound:
         existing = []
-        
+
     if not isinstance(existing, list):
         existing = []
 
     existing.append(value)
-    aero_client.put((NAMESPACE, SET_NAME, key), {"value": existing, "key": key}, policy=WRITE_POLICY)
+    aero_client.put(
+        (NAMESPACE, SET_NAME, key), {"value": existing, "key": key}, policy=WRITE_POLICY
+    )
 
 
 # ==========================
@@ -85,7 +102,14 @@ def kv_append(key, value):
 # ==========================
 def run_seeder():
     # 1. Siapkan DB untuk dokumen
-    for db in ["user", "rumah_sakit", "obat", "pemesanan_layanan", "pemesanan_obat", "janji_temu"]:
+    for db in [
+        "user",
+        "rumah_sakit",
+        "obat",
+        "pemesanan_layanan",
+        "pemesanan_obat",
+        "janji_temu",
+    ]:
         create_db(db)
 
     # 2. User (pasien + tenaga medis)
@@ -94,41 +118,47 @@ def run_seeder():
 
     for _ in range(5000):  # pasien
         email = fake.email()
-        users.append({
-            "email": email,
-            "kata_sandi": "hashed123",
-            "nama_lengkap": fake.name(),
-            "tanggal_lahir": fake.date_of_birth(minimum_age=18, maximum_age=70).isoformat(),
-            "nomor_telepon": fake.phone_number(),
-            "alamat": {
-                "provinsi": fake.state(),
-                "kota": fake.city_name(),
-                "jalan": fake.street_name()
-            },
-            "tipe_akun": "pasien"
-        })
+        users.append(
+            {
+                "email": email,
+                "kata_sandi": "hashed123",
+                "nama_lengkap": fake.name(),
+                "tanggal_lahir": fake.date_of_birth(
+                    minimum_age=18, maximum_age=70
+                ).isoformat(),
+                "nomor_telepon": fake.phone_number(),
+                "alamat": {
+                    "provinsi": fake.state(),
+                    "kota": fake.city_name(),
+                    "jalan": fake.street_name(),
+                },
+                "tipe_akun": "pasien",
+            }
+        )
         pasien_emails.append(email)
 
     for _ in range(5000):  # tenaga medis
         email = fake.email()
         id_rs = f"RS{random.randint(1,100):02d}"
-        users.append({
-            "email": email,
-            "kata_sandi": "hashed123",
-            "nama_lengkap": fake.name(),
-            "tanggal_lahir": fake.date_of_birth().isoformat(),
-            "nomor_telepon": fake.phone_number(),
-            "alamat": {
-                "provinsi": fake.state(),
-                "kota": fake.city_name(),
-                "jalan": fake.street_name()
-            },
-            "tipe_akun": "tenaga_medis",
-            "NIKes": ''.join(random.choices(string.digits, k=8)),
-            "profesi": random.choice(["dokter", "perawat"]),
-            "id_rs": id_rs,
-            "departemen": random.choice(["Radiologi", "Farmasi", "Umum"])
-        })
+        users.append(
+            {
+                "email": email,
+                "kata_sandi": "hashed123",
+                "nama_lengkap": fake.name(),
+                "tanggal_lahir": fake.date_of_birth().isoformat(),
+                "nomor_telepon": fake.phone_number(),
+                "alamat": {
+                    "provinsi": fake.state(),
+                    "kota": fake.city_name(),
+                    "jalan": fake.street_name(),
+                },
+                "tipe_akun": "tenaga_medis",
+                "NIKes": "".join(random.choices(string.digits, k=8)),
+                "profesi": random.choice(["dokter", "perawat"]),
+                "id_rs": id_rs,
+                "departemen": random.choice(["Radiologi", "Farmasi", "Umum"]),
+            }
+        )
         tenaga_medis_emails.append(email)
 
     insert_docs("user", users)
@@ -137,33 +167,44 @@ def run_seeder():
     rumah_sakit_docs = []
     for i in range(100):
         id_rs = f"RS{i+1:02d}"
-        rumah_sakit_docs.append({
-            "id_rs": id_rs,
-            "nama": f"RS {fake.company()}",
-            "alamat": {
-                "provinsi": fake.state(),
-                "kota": fake.city_name(),
-                "jalan": fake.street_name()
-            },
-            "departemen": [{"nama": d, "gedung": chr(65+i)} for d in ["Umum", "Farmasi", "Radiologi"]],
-            "layanan_medis": [
-                {"id_layanan": f"L{i+1}{j}", "nama_layanan": LAYANAN_ENUM[j], "biaya": random.randint(100_000, 500_000)}
-                for j in range(3)
-            ]
-        })
+        rumah_sakit_docs.append(
+            {
+                "id_rs": id_rs,
+                "nama": f"RS {fake.company()}",
+                "alamat": {
+                    "provinsi": fake.state(),
+                    "kota": fake.city_name(),
+                    "jalan": fake.street_name(),
+                },
+                "departemen": [
+                    {"nama": d, "gedung": chr(65 + i)}
+                    for d in ["Umum", "Farmasi", "Radiologi"]
+                ],
+                "layanan_medis": [
+                    {
+                        "id_layanan": f"L{i+1}{j}",
+                        "nama_layanan": LAYANAN_ENUM[j],
+                        "biaya": random.randint(100_000, 500_000),
+                    }
+                    for j in range(3)
+                ],
+            }
+        )
     insert_docs("rumah_sakit", rumah_sakit_docs)
 
     # 4. Obat — SEKARANG DI COUCHDB
     obat_docs = []
     for i in range(500):
         id_obat = f"OB{i+1:03d}"
-        obat_docs.append({
-            "id_obat": id_obat,
-            "nama": fake.word().capitalize(),
-            "label": random.choice(OBAT_LABELS),
-            "harga": random.randint(5000, 50000),
-            "stok": random.randint(10, 200)
-        })
+        obat_docs.append(
+            {
+                "id_obat": id_obat,
+                "nama": fake.word().capitalize(),
+                "label": random.choice(OBAT_LABELS),
+                "harga": random.randint(5000, 50000),
+                "stok": random.randint(10, 200),
+            }
+        )
     insert_docs("obat", obat_docs)
     print("Data obat dimasukkan ke CouchDB.")
 
@@ -173,9 +214,15 @@ def run_seeder():
         id_baymin = f"BM{i+1:03d}"
         warna = random.choice(["hitam", "putih", "merah", "biru"])
         email_pasien = random.choice(pasien_emails) if random.random() < 0.8 else None
-        kv_put(f"baymin:{id_baymin}:warna", {"value": warna, "key": f"baymin:{id_baymin}:warna"})
+        kv_put(
+            f"baymin:{id_baymin}:warna",
+            {"value": warna, "key": f"baymin:{id_baymin}:warna"},
+        )
         if email_pasien:
-            kv_put(f"baymin:{id_baymin}:email_pasien", {"value": email_pasien, "key": f"baymin:{id_baymin}:email_pasien"})
+            kv_put(
+                f"baymin:{id_baymin}:email_pasien",
+                {"value": email_pasien, "key": f"baymin:{id_baymin}:email_pasien"},
+            )
         baymin_list.append({"id": id_baymin, "email": email_pasien})
     print("Baymin dimasukkan ke Aerospike.")
 
@@ -189,7 +236,7 @@ def run_seeder():
         "olahraga pagi",
         "meminum obat",
         "sinkronisasi data ke server",
-        "update firmware perangkat"
+        "update firmware perangkat",
     ]
 
     # untuk setiap perangkat Baymin
@@ -197,7 +244,11 @@ def run_seeder():
         id_baymin = perangkat["id"]
 
         for n in range(10):
-            tanggal = fake.date_time_between(start_date='-1y', end_date='+1y').date().isoformat()
+            tanggal = (
+                fake.date_time_between(start_date="-1y", end_date="+1y")
+                .date()
+                .isoformat()
+            )
             # tentukan jumlah aktivitas dalam hari itu (1–10 kali)
             jumlah_aktivitas = random.randint(1, 10)
             log_entry = {}
@@ -207,7 +258,7 @@ def run_seeder():
                 jam_random = datetime.time(
                     hour=random.randint(0, 23),
                     minute=random.randint(0, 59),
-                    second=random.randint(0, 59)
+                    second=random.randint(0, 59),
                 ).strftime("%H:%M:%S")
 
                 # pilih aktivitas secara acak
@@ -219,7 +270,9 @@ def run_seeder():
             key = f"log_act:{id_baymin}:{tanggal}"
 
             try:
-                (_, _, record) = aero_client.get((NAMESPACE, SET_NAME, key), policy=READ_POLICY)
+                (_, _, record) = aero_client.get(
+                    (NAMESPACE, SET_NAME, key), policy=READ_POLICY
+                )
                 existing = record.get("value", {})
                 if not isinstance(existing, dict):
                     existing = {}
@@ -227,9 +280,12 @@ def run_seeder():
                 existing = {}
 
             existing.update(log_entry)
-            aero_client.put((NAMESPACE, SET_NAME, key), {"value": existing, "key": key}, policy=WRITE_POLICY)
+            aero_client.put(
+                (NAMESPACE, SET_NAME, key),
+                {"value": existing, "key": key},
+                policy=WRITE_POLICY,
+            )
     print("Log aktivitas Baymin dimasukkan ke Aerospike.")
-
 
     # 7. Pemesanan Layanan
     layanan_docs = []
@@ -242,13 +298,16 @@ def run_seeder():
             "id_pesanan": id_pesanan,
             "email_pemesan": email,
             "waktu_pemesanan": fake.date_time_this_year().isoformat(),
-            "jadwal_pelaksanaan": fake.future_datetime(end_date='+30d').isoformat(),
+            "jadwal_pelaksanaan": fake.future_datetime(end_date="+30d").isoformat(),
             "status_pemesanan": random.choice(STATUS_ENUM),
             "rs": rs["alamat"] | {"nama_rs": rs["nama"]},
-            "layanan": layanan
+            "layanan": layanan,
         }
         layanan_docs.append(doc)
-        kv_append(f"user:{email}:pemesanan_layanan", {"value": id_pesanan, "key": f"user:{email}:pemesanan_layanan"})
+        kv_append(
+            f"user:{email}:pemesanan_layanan",
+            {"value": id_pesanan, "key": f"user:{email}:pemesanan_layanan"},
+        )
     insert_docs("pemesanan_layanan", layanan_docs)
 
     # 8. Pemesanan Obat
@@ -259,22 +318,27 @@ def run_seeder():
         detail_pesanan = []
         for _ in range(random.randint(1, 3)):
             obat = random.choice(obat_docs)
-            detail_pesanan.append({
-                "id_obat": obat["id_obat"],
-                "nama_obat": obat["nama"],
-                "jumlah": random.randint(1, 5),
-                "harga_satuan": obat["harga"],
-                "label_obat": obat["label"]
-            })
+            detail_pesanan.append(
+                {
+                    "id_obat": obat["id_obat"],
+                    "nama_obat": obat["nama"],
+                    "jumlah": random.randint(1, 5),
+                    "harga_satuan": obat["harga"],
+                    "label_obat": obat["label"],
+                }
+            )
         doc = {
             "id_pesanan": id_pesanan,
             "email_pemesan": email,
             "waktu_pemesanan": fake.date_time_this_year().isoformat(),
             "status_pemesanan": random.choice(STATUS_ENUM),
-            "detail_pesanan": detail_pesanan
+            "detail_pesanan": detail_pesanan,
         }
         pemesanan_obat_docs.append(doc)
-        kv_append(f"user:{email}:pemesanan_obat", {"value": id_pesanan, "key": f"user:{email}:pemesanan_obat"})
+        kv_append(
+            f"user:{email}:pemesanan_obat",
+            {"value": id_pesanan, "key": f"user:{email}:pemesanan_obat"},
+        )
     insert_docs("pemesanan_obat", pemesanan_obat_docs)
 
     # 9. Janji Temu
@@ -286,44 +350,62 @@ def run_seeder():
         dokter = random.choice(tenaga_medis_emails)
         rs = random.choice(rumah_sakit_docs)
         obat = random.choice(obat_docs)
-        detail_resep = [{
-            "id_obat": obat["id_obat"],
-            "nama_obat": obat["nama"],
-            "dosis": f"{random.randint(1,3)}x sehari",
-            "label_obat": obat["label"]
-        }]
+        detail_resep = [
+            {
+                "id_obat": obat["id_obat"],
+                "nama_obat": obat["nama"],
+                "dosis": f"{random.randint(1,3)}x sehari",
+                "label_obat": obat["label"],
+            }
+        ]
         doc = {
             "id_janji_temu": id_janji,
-            "waktu_pelaksanaan": fake.date_time_between(start_date='-1y', end_date='+1y').isoformat(),
+            "waktu_pelaksanaan": fake.date_time_between(
+                start_date="-1y", end_date="+1y"
+            ).isoformat(),
             "alasan": random.choice(["checkup", "kontrol lanjutan", "konsultasi umum"]),
             "status": status,
             "email_pasien": pasien,
             "email_tenaga_medis": dokter,
             "rs": rs["alamat"] | {"nama_rs": rs["nama"]},
             "penyakit": random.choice(["flu", "asma", "hipertensi"]),
-            "detail_resep": detail_resep
+            "detail_resep": detail_resep if random.random() > 0.1 else [],
         }
         janji_docs.append(doc)
-        kv_append(f"user:{pasien}:janji_temu", {"value": id_janji, "key": f"user:{pasien}:janji_temu"})
-        kv_append(f"tenaga_medis:{dokter}:janji_temu", {"value": id_janji, "key": f"tenaga_medis:{dokter}:janji_temu"})
-        kv_append(f"rs:{rs['id_rs']}:janji_temu", {"value": id_janji, "key": f"rs:{rs['id_rs']}:janji_temu"})
+        kv_append(
+            f"user:{pasien}:janji_temu",
+            {"value": id_janji, "key": f"user:{pasien}:janji_temu"},
+        )
+        kv_append(
+            f"tenaga_medis:{dokter}:janji_temu",
+            {"value": id_janji, "key": f"tenaga_medis:{dokter}:janji_temu"},
+        )
+        kv_append(
+            f"rs:{rs['id_rs']}:janji_temu",
+            {"value": id_janji, "key": f"rs:{rs['id_rs']}:janji_temu"},
+        )
     insert_docs("janji_temu", janji_docs)
 
-    print("\nSEEDER SELESAI — Semua data dummy berhasil dimasukkan ke CouchDB & Aerospike.")
+    print(
+        "\nSEEDER SELESAI — Semua data dummy berhasil dimasukkan ke CouchDB & Aerospike."
+    )
     aero_client.close()
+
 
 if __name__ == "__main__":
     print("Clear Database")
     clear_all_databases()
-    
+
     print("\nRun Seeder")
     run_seeder()
 
     client = aerospike.client({"hosts": [("127.0.0.1", 3000)]}).connect()
     scan = client.scan("halodoc", "kv")
     count = 0
+
     def cb(r):
         global count
         count += 1
+
     scan.foreach(cb)
     print("\nTotal key di halodoc.kv:", count)
