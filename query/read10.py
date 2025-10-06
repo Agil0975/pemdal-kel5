@@ -16,7 +16,7 @@ if __name__ == "__main__":
     query = {
         "selector": {"detail_resep": {"$size": 0}},
         "fields": ["id_janji_temu", "email_pasien"],
-        "limit": 10000,  # Add explicit limit
+        "limit": 10000,
     }
 
     appointments_without_results = query_docs("janji_temu", query)

@@ -17,7 +17,7 @@ if __name__ == "__main__":
     query = {
         "selector": {"tipe_akun": "tenaga_medis"},
         "fields": ["email", "id_rs"],
-        "limit": 10000,  # Add explicit limit
+        "limit": 10000,
     }
 
     tenaga_medis_users = query_docs("user", query)
@@ -34,7 +34,7 @@ if __name__ == "__main__":
     all_hospital_ids = list(hospital_counts.keys())
 
     hospitals_query = {
-        "selector": {"id_rs": {"$in": all_hospital_ids}},  # Batch query
+        "selector": {"id_rs": {"$in": all_hospital_ids}},
         "fields": ["id_rs", "nama"],
         "limit": len(all_hospital_ids) + 100,
     }
