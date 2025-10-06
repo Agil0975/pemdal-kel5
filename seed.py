@@ -12,7 +12,7 @@ COUCHDB_URL = "http://127.0.0.1:5984"
 COUCHDB_AUTH = ("admin", "admin123")
 AERO_CONFIG = {"hosts": [("127.0.0.1", 3000)]}
 
-NAMESPACE = "test"
+NAMESPACE = "halodoc"
 SET_NAME = "kv"
 
 # ==========================
@@ -263,10 +263,10 @@ if __name__ == "__main__":
     run_seeder()
 
     client = aerospike.client({"hosts": [("127.0.0.1", 3000)]}).connect()
-    scan = client.scan("test", "kv")
+    scan = client.scan("halodoc", "kv")
     count = 0
     def cb(r):
         global count
         count += 1
     scan.foreach(cb)
-    print("Total key di test.kv:", count)
+    print("Total key di halodoc.kv:", count)

@@ -4,7 +4,7 @@ import time
 
 # KONFIGURASI KONEKSI
 AERO_CONFIG = {"hosts": [("127.0.0.1", 3000)]}
-NAMESPACE = "test"
+NAMESPACE = "halodoc"
 SET_NAME = "kv"
 
 try:
